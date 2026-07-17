@@ -1,0 +1,123 @@
+<!-- "This is a modern HTML document"-->
+<!DOCTYPE html>
+
+<!--html = everything between tags belongs to webpage-->
+<html>
+
+<!--info about page; not stuff user seea-->
+<head>
+
+    <!--Changes browser tab name-->
+    <title>Anime Database</title>
+
+    <link rel ="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300; 400; 500; 600&family=Space+Mono:wght@400; 700&display=swap" rel="stylesheet">
+
+    <!--Find styles.css and use it-->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<!--Stuff user will actually see-->
+<body>
+
+      <!-- HEADER -->
+<header>
+  <div class="logo">Anime<span>.</span>db</div>
+  <nav>
+    <a href="#" class="nav-link active" data-filter="all">All</a>
+    <a href="#" class="nav-link" data-filter="Watching">Watching</a>
+    <a href="#" class="nav-link" data-filter="Completed">Completed</a>
+    <a href="#" class="nav-link" data-filter="Plan to Watch">Plan to Watch</a>
+  </nav>
+  <button id="theme-toggle">☀ Dawn</button>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-text">
+    <h1>What will you<br>watch <em>tonight?</em></h1>
+    <p>Your personal anime vault — randomized.</p>
+    <button id="random-button">✦ Randomize</button>
+  </div>
+  <div class="hero-badge">
+    <span id="anime-count" class="count">0</span>
+    <span class="label">Anime in vault</span>
+  </div>
+</div>
+
+<!-- FEATURED CARD -->
+<div id="featured-section" style="display:none;">
+  <div class="featured-card">
+    <div>
+      <div class="featured-label">✦ Tonight's Pick</div>
+      <div id="featured-title" class="featured-title"></div>
+      <div id="featured-meta" class="featured-meta"></div>
+    </div>
+    <div id="featured-stars" class="featured-stars"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Add to Vault</div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="title-input" placeholder="e.g. Frieren">
+    </div>
+
+    <div class="form-group">
+      <label>Genre</label>
+      <input type="text" id="genre-input" placeholder="e.g. Fantasy" autocomplete="off">
+      <div id="genre-suggestions" class="suggestions"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <select id="status-input">
+        <option value="Plan to Watch">Plan to Watch</option>
+        <option value="Watching">Watching</option>
+        <option value="Completed">Completed</option>
+        <option value="On Hold">On Hold</option>
+        <option value="Dropped">Dropped</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Rating</label>
+      <div id="star-rating" class="star-row">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+    </div>
+
+    <button id="add-button">+ Add Anime</button>
+
+    <hr class="divider">
+
+    <div class="sidebar-title">Filter by Genre</div>
+    <div id="filter-chips">
+      <span class="filter-chip active" data-genre="all">All</span>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="content-header">
+      <div id="vault-count" class="content-title">Your Vault</div>
+    </div>
+    <div id="anime-list" class="anime-grid"></div>
+  </main>
+
+</div>
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>
