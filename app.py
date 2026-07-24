@@ -1,4 +1,21 @@
 
+# STRUCTURE: Broswer -> Flask (app.py) -> SQLite (database.db)
+# Flask: middleman that reads from dB & sends data to frontend
+
+# FLASK STRUCTURE:
+# 1. Each @app.route connects a URL to a function
+# 2. GET routes read data, POST creates, PUT updates, DELETE removes
+# 3. Every database operation: connect → execute → commit → close
+# 4. jsonify() converts Python data to JSON for the frontend
+# 5. render_template() serves HTML files from the templates/ folder
+
+
+# SQL BASICS:
+# SELECT * FROM anime       → read all rows
+# INSERT INTO anime ...     → add a new row
+# UPDATE anime SET ... WHERE id=?  → modify one row (WHERE is critical!)
+# DELETE FROM anime WHERE id=?     → remove one row (WHERE is critical!)
+# Always use ? placeholders — never put variables directly in SQL (security!)
 
 # brings Flask into file so it can be used; render_template looks inside templates/ folder and serves HTML file given
 from flask import Flask, render_template, jsonify, request

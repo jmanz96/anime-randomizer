@@ -1,3 +1,10 @@
+/*
+  THEMES: CSS variables defined in :root (dark) and body.dawn (light)
+  Switching themes just swaps the variable values — no other CSS changes
+  Box model: margin (outside) → border → padding (inside) → content
+*/
+
+
 /* Gives page breathing room */
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
 

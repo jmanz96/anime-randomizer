@@ -1,3 +1,19 @@
+/*
+  FRONTEND FLOW:
+  1. fetchAnime() asks Flask for data via GET request
+  2. renderAnime() builds cards from that data using template literals
+  3. Event listeners watch for user actions (click, input)
+  4. User actions trigger POST/PUT/DELETE requests to Flask
+  5. Flask updates the database and JS re-fetches to reflect changes
+  
+  CRUD: Create (POST) → Read (GET) → Update (PUT) → Delete (DELETE)
+*/
+
+
+// STRUCTURE:
+//  script.js never touches dB directly
+//    always asks Flask first & Flask handles dB
+
 // ── STATE ──
 let animeList = [];
 let currentRating = 0;
