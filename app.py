@@ -49,14 +49,21 @@ def get_anime():
 def add_anime():
     data = request.get_json(force=True)
     title = data["title"]
-    genre = data["genre"]
+    genre = data.get("genre", "")
     status = data["status"]
     rating = data.get("rating", 0)
+    image_url = data.get("image_url", "")
+    episodes = data.get("episodes", None)
+    mal_score = data.get("mal_score", None)
+    synopsis = data.get("synopsis", "")
+    studio = data.get("studio", "")
+    year = data.get("year", None)
+    mal_id = data.get("mal_id", None)
 
     conn = get_db_connection()
     conn.execute(
-        "INSERT INTO anime (title, genre, status, rating) VALUES (?, ?, ?, ?)",
-        (title, genre, status, rating)
+        """INSERT INTO anime (title, genre, status, rating, image_url, episodes, mal_score, synopsis, studio, year, mal_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (title, genre, status, rating, image_url, episodes, mal_score, synopsis, studio, year, mal_id)
     )
     conn.commit()
     conn.close()
@@ -75,7 +82,7 @@ def delete_anime(id):
 def update_anime(id): 
        data = request.get_json(force=True)
        title = data["title"]
-       genre = data["genre"]
+       genre = data.get("genre", "")
        status = data["status"]
        rating = data.get("rating", 0)
 

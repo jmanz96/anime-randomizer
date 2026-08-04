@@ -19,6 +19,7 @@ let animeList = [];
 let currentRating = 0;
 let currentFilter = "all";
 let genres = [];
+let selectedAnime = null;   // stores anime picked from Jikan
 
 // ── THEME TOGGLE ──
 const themeToggle = document.getElementById("theme-toggle");
@@ -91,6 +92,75 @@ document.addEventListener("click", (e) => {
   if (!genreInput.contains(e.target)) suggestions.style.display = "none";
 });
 
+// -- JIKAN SEARCH --
+const titleInput = document.getElementById("title-input");
+const jikanSuggestions = document.getElementById("jikan-suggestions");
+
+titleInput.addEventListener("input", () => {
+  const query = titleInput.value.trim();
+  if (query.length < 3) {
+    jikanSuggestions.style.display = "none";
+    return;
+  }
+
+  // wait for user to stop typing before searching
+  clearTimeout(titleInput._searchTimeout);
+  titleInput._searchTimeout = setTimeout (() => {
+    fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`)
+      .then(res => res.json())
+      .then(data => {
+        if(!data.data || data.data.length === 0) {
+          jikanSuggestions.style.display = "none";
+          return;
+        }
+
+        jikanSuggestions.innerHTML = data.data.map(anime => `
+          <div class="suggestion-item" onclick="selectJikanAnime(${anime.mal_id})">
+            <strong>${anime.title_english || anime.title}</strong>
+            <span style="color:var(--text-muted);font-size:11px;">
+              ${anime.year || ""} · ${anime.episodes || "?"} eps
+            </span>
+          </div>
+          `).join("");
+
+          // store results to allow lookup when user picks one
+          titleInput._jikanResults = data.data;
+          jikanSuggestions.style.display = "block";
+       
+        });
+
+      }, 400);
+
+  });
+
+  function selectJikanAnime(malId) {
+    const anime = titleInput._jikanResults.find(a => a.mal_id === malId);
+    if (!anime) return;
+
+    // store full anime data
+    selectedAnime = {
+      title: anime.title_english || anime.title,
+      genre: anime.genres.map(g => g.name).join(", "),
+      image_url: anime.images?.jpg?.large_image_url || "",
+      episodes: anime.episodes || null,
+      mal_score: anime.score || null,
+      synopsis: anime.synopsis || "",
+      studio: anime.studios?.[0]?.name || "",
+      year: anime.year || null,
+      mal_id: anime.mal_id
+    };
+
+    // autofill form
+    titleInput.value = selectedAnime.title;
+    document.getElementById("genre-input").value = selectedAnime.genre;
+    jikanSuggestions.style.display = "none";
+}
+
+document.addEventListener("click", (e) => {
+  if (!titleInput.contains(e.target)) jikanSuggestions.style.display = "none";
+});
+
+
 // ── FETCH & RENDER ──
 function fetchAnime() {
   fetch("/anime")
@@ -132,13 +202,28 @@ function renderAnime() {
 
   container.innerHTML = filtered.map(anime => `
     <div class="anime-card" data-id="${anime.id}">
-      <div class="card-genre">${anime.genre || "—"}</div>
-      <div class="card-title">${anime.title}</div>
-      <span class="card-status ${getStatusClass(anime.status)}">${anime.status || "—"}</span>
-      <div class="card-stars">${renderStars(anime.rating)}</div>
-      <div class="card-actions">
-        <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
-        <button class="btn-delete" onclick="deleteAnime(${anime.id})">✕</button>
+      ${anime.image_url ? `
+        <div class="card-image">
+          <img src="${anime.image_url}" alt="${anime.title}">
+        </div>` : ""}
+      <div class="card-body">
+        <div class="card-genre">${anime.genre || "-"}</div>
+        <div class="card-title">${anime.title}</div>
+        <span class="card-status ${getStatusClass(anime.status)}">${anime.status || "-"}</span>
+        ${anime.episodes ? `<div class="card-episodes">📺${anime.episodes} episodes</div>` : ""}
+        ${anime.studio ? `<div class="card-studio">🎬 ${anime.studio}</div>` : ""}
+        ${anime.year ? `<div class="card-year">📅 ${anime.year}</div>` : ""}
+        ${anime.mal_score ? `<div class="card-mal-score">⭐ MAL: ${anime.mal_score} </div`: ""}
+        <div class="card-stars">${renderStars(anime.rating)}</div>
+        ${anime.synopsis ? `
+          <div class="card-synopsis">${anime.synopsis.length > 120
+            ? anime.synopsis.substring(0, 120) + "..."
+            : anime.synopsis}
+          </div>` : ""}
+        <div class="card-actions">
+            <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
+            <button class="btn-delete" onclick="deleteAnime(${anime.id})">x</button>
+        </div>
       </div>
     </div>
   `).join("");
@@ -184,10 +269,25 @@ document.getElementById("add-button").addEventListener("click", () => {
 
   if (!title) { alert("Please enter a title!"); return; }
 
+  // merge Jikan data with user input
+  const payload = {
+    title,
+    genre,
+    status,
+    rating,
+    image_url: selectedAnime?. image_url || "",
+    episodes: selectedAnime?.episodes || null,
+    mal_score: selectedAnime?.mal_score || null,
+    synopsis: selectedAniime?.studio || "",
+    studio: selectedAnime?.studio || "",
+    year: selectedAnime?.year || null,
+    mal_id: selectedAnime?.mal_id || null
+  };
+
   fetch("/anime", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, genre, status, rating })
+    body: JSON.stringify(payload)
   })
   .then(res => res.json())
   .then(() => {
@@ -195,6 +295,7 @@ document.getElementById("add-button").addEventListener("click", () => {
     document.getElementById("genre-input").value = "";
     document.getElementById("status-input").value = "Plan to Watch";
     currentRating = 0;
+    selectedAnime = null;
     updateStars();
     fetchAnime();
   });
