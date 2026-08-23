@@ -1,17 +1,43 @@
-# brings Flask into file so it can be used
+# brings Flask into file so you can use it
 from flask import Flask, render_template, jsonify, request
-import sqlite3
+import os
 import json
 import requests as http_requests
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 # creates Flask app
 app = Flask(__name__)
 
-# connects to database and returns data
+# database URL — uses environment variable in production, falls back to local for development
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://anime_randomizer_db_user:y1yBd2kjtDI0wPXg1WGt3ExSaHPqZIy2@dpg-da5kmh8u01pc73fk0c8g-a.virginia-postgres.render.com/anime_randomizer_db")
+
 def get_db_connection():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     return conn
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS anime (
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            genre TEXT,
+            status TEXT,
+            rating REAL,
+            image_url TEXT,
+            episodes INTEGER,
+            mal_score REAL,
+            synopsis TEXT,
+            studio TEXT,
+            year INTEGER,
+            mal_id INTEGER
+        )
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 @app.route("/")
 def home():
@@ -20,7 +46,10 @@ def home():
 @app.route("/anime")
 def get_anime():
     conn = get_db_connection()
-    anime = conn.execute("SELECT * FROM anime").fetchall()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM anime ORDER BY id")
+    anime = cursor.fetchall()
+    cursor.close()
     conn.close()
     return jsonify([dict(row) for row in anime])
 
@@ -40,23 +69,27 @@ def add_anime():
     mal_id = data.get("mal_id", None)
 
     conn = get_db_connection()
-    conn.execute(
+    cursor = conn.cursor()
+    cursor.execute(
         """INSERT INTO anime 
         (title, genre, status, rating, image_url, episodes, 
         mal_score, synopsis, studio, year, mal_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
         (title, genre, status, rating, image_url, episodes,
         mal_score, synopsis, studio, year, mal_id)
     )
     conn.commit()
+    cursor.close()
     conn.close()
     return jsonify({"message": "Anime added!"})
 
 @app.route("/anime/<int:id>", methods=["DELETE"])
 def delete_anime(id):
     conn = get_db_connection()
-    conn.execute("DELETE FROM anime WHERE id = ?", (id,))
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM anime WHERE id = %s", (id,))
     conn.commit()
+    cursor.close()
     conn.close()
     return jsonify({"message": "Anime deleted!"})
 
@@ -69,11 +102,13 @@ def update_anime(id):
     rating = data.get("rating", 0)
 
     conn = get_db_connection()
-    conn.execute(
-        "UPDATE anime SET title=?, genre=?, status=?, rating=? WHERE id=?",
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE anime SET title=%s, genre=%s, status=%s, rating=%s WHERE id=%s",
         (title, genre, status, rating, id)
     )
     conn.commit()
+    cursor.close()
     conn.close()
     return jsonify({"message": "Anime updated!"})
 
@@ -90,6 +125,9 @@ def search_anime():
         return jsonify(response.json())
     except Exception as e:
         print(f"Jikan error: {e}")
-        return jsonify({"error": str(e)}), 500# only runs if this file running directly
+        return jsonify({"error": str(e)}), 500
+
+# only runs if this file is running directly
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True, port=5001)
