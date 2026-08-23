@@ -9,17 +9,16 @@
   CRUD: Create (POST) → Read (GET) → Update (PUT) → Delete (DELETE)
 */
 
-
 // STRUCTURE:
-//  script.js never touches dB directly
-//    always asks Flask first & Flask handles dB
+// script.js never touches the database directly
+// always asks Flask first & Flask handles the database
 
 // ── STATE ──
 let animeList = [];
 let currentRating = 0;
 let currentFilter = "all";
 let genres = [];
-let selectedAnime = null;   // stores anime picked from Jikan
+let selectedAnime = null; // stores anime picked from Jikan
 
 // ── THEME TOGGLE ──
 const themeToggle = document.getElementById("theme-toggle");
@@ -92,7 +91,7 @@ document.addEventListener("click", (e) => {
   if (!genreInput.contains(e.target)) suggestions.style.display = "none";
 });
 
-// -- JIKAN SEARCH --
+// ── JIKAN SEARCH ──
 const titleInput = document.getElementById("title-input");
 const jikanSuggestions = document.getElementById("jikan-suggestions");
 
@@ -105,12 +104,13 @@ titleInput.addEventListener("input", () => {
 
   // wait for user to stop typing before searching
   clearTimeout(titleInput._searchTimeout);
-  titleInput._searchTimeout = setTimeout (() => {
-    fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`)
+  titleInput._searchTimeout = setTimeout(() => {
+    console.log("Searching for:", query);
+    fetch(`/search?q=${encodeURIComponent(query)}`)
       .then(res => res.json())
       .then(data => {
-        if(!data.data || data.data.length === 0) {
-          jikanSuggestions.style.display = "none";
+        console.log("Jikan response:", data);
+          if (!data.data || data.data.length === 0) {
           return;
         }
 
@@ -121,45 +121,41 @@ titleInput.addEventListener("input", () => {
               ${anime.year || ""} · ${anime.episodes || "?"} eps
             </span>
           </div>
-          `).join("");
+        `).join("");
 
-          // store results to allow lookup when user picks one
-          titleInput._jikanResults = data.data;
-          jikanSuggestions.style.display = "block";
-       
-        });
+        // store results so we can look them up when user picks one
+        titleInput._jikanResults = data.data;
+        jikanSuggestions.style.display = "block";
+      });
+  }, 400);
+});
 
-      }, 400);
+function selectJikanAnime(malId) {
+  const anime = titleInput._jikanResults.find(a => a.mal_id === malId);
+  if (!anime) return;
 
-  });
+  // store full anime data
+  selectedAnime = {
+    title: anime.title_english || anime.title,
+    genre: anime.genres.map(g => g.name).join(", "),
+    image_url: anime.images?.jpg?.large_image_url || "",
+    episodes: anime.episodes || null,
+    mal_score: anime.score || null,
+    synopsis: anime.synopsis || "",
+    studio: anime.studios?.[0]?.name || "",
+    year: anime.year || null,
+    mal_id: anime.mal_id
+  };
 
-  function selectJikanAnime(malId) {
-    const anime = titleInput._jikanResults.find(a => a.mal_id === malId);
-    if (!anime) return;
-
-    // store full anime data
-    selectedAnime = {
-      title: anime.title_english || anime.title,
-      genre: anime.genres.map(g => g.name).join(", "),
-      image_url: anime.images?.jpg?.large_image_url || "",
-      episodes: anime.episodes || null,
-      mal_score: anime.score || null,
-      synopsis: anime.synopsis || "",
-      studio: anime.studios?.[0]?.name || "",
-      year: anime.year || null,
-      mal_id: anime.mal_id
-    };
-
-    // autofill form
-    titleInput.value = selectedAnime.title;
-    document.getElementById("genre-input").value = selectedAnime.genre;
-    jikanSuggestions.style.display = "none";
+  // autofill form
+  titleInput.value = selectedAnime.title;
+  document.getElementById("genre-input").value = selectedAnime.genre;
+  jikanSuggestions.style.display = "none";
 }
 
 document.addEventListener("click", (e) => {
   if (!titleInput.contains(e.target)) jikanSuggestions.style.display = "none";
 });
-
 
 // ── FETCH & RENDER ──
 function fetchAnime() {
@@ -176,7 +172,7 @@ function fetchAnime() {
 
 function updateCount() {
   document.getElementById("anime-count").textContent = animeList.length;
-  document.getElementById("vault-count").textContent =
+  document.getElementById("vault-count").textCojntent =
     `Your Vault — ${animeList.length} title${animeList.length !== 1 ? "s" : ""}`;
 }
 
@@ -207,13 +203,13 @@ function renderAnime() {
           <img src="${anime.image_url}" alt="${anime.title}">
         </div>` : ""}
       <div class="card-body">
-        <div class="card-genre">${anime.genre || "-"}</div>
+        <div class="card-genre">${anime.genre || "—"}</div>
         <div class="card-title">${anime.title}</div>
-        <span class="card-status ${getStatusClass(anime.status)}">${anime.status || "-"}</span>
-        ${anime.episodes ? `<div class="card-episodes">📺${anime.episodes} episodes</div>` : ""}
+        <span class="card-status ${getStatusClass(anime.status)}">${anime.status || "—"}</span>
+        ${anime.episodes ? `<div class="card-episodes">📺 ${anime.episodes} episodes</div>` : ""}
         ${anime.studio ? `<div class="card-studio">🎬 ${anime.studio}</div>` : ""}
         ${anime.year ? `<div class="card-year">📅 ${anime.year}</div>` : ""}
-        ${anime.mal_score ? `<div class="card-mal-score">⭐ MAL: ${anime.mal_score} </div`: ""}
+        ${anime.mal_score ? `<div class="card-mal-score">⭐ MAL: ${anime.mal_score}</div>` : ""}
         <div class="card-stars">${renderStars(anime.rating)}</div>
         ${anime.synopsis ? `
           <div class="card-synopsis">${anime.synopsis.length > 120
@@ -221,8 +217,8 @@ function renderAnime() {
             : anime.synopsis}
           </div>` : ""}
         <div class="card-actions">
-            <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
-            <button class="btn-delete" onclick="deleteAnime(${anime.id})">x</button>
+          <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
+          <button class="btn-delete" onclick="deleteAnime(${anime.id})">✕</button>
         </div>
       </div>
     </div>
@@ -275,10 +271,10 @@ document.getElementById("add-button").addEventListener("click", () => {
     genre,
     status,
     rating,
-    image_url: selectedAnime?. image_url || "",
+    image_url: selectedAnime?.image_url || "",
     episodes: selectedAnime?.episodes || null,
     mal_score: selectedAnime?.mal_score || null,
-    synopsis: selectedAniime?.studio || "",
+    synopsis: selectedAnime?.synopsis || "",
     studio: selectedAnime?.studio || "",
     year: selectedAnime?.year || null,
     mal_id: selectedAnime?.mal_id || null
@@ -308,7 +304,7 @@ function deleteAnime(id) {
     .then(() => fetchAnime());
 }
 
-// ── EDIT  ──
+// ── EDIT ──
 function editAnime(id) {
   const anime = animeList.find(a => a.id === id);
   if (!anime) return;
@@ -318,38 +314,41 @@ function editAnime(id) {
     <div class="form-group">
       <label>Title</label>
       <input type="text" id="edit-title-${id}" value="${anime.title}">
-      </div>
-      <div class="form-group">
-        <label>Genre</label>
-        <input type="text" id="edit-genre-${id}" value="${anime.genre || ""}">
-        </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="edit-status-${id}">
-          <option ${anime.status === "Plan to Watch" ? "selected" : ""} >Plan to Watch</option> 
-          <option ${anime.status === "Watching" ? "selected" : ""}>Watching</option>
-          <option ${anime.status === "Completed" ? "selected" : ""}>Completed</option>
-          <option ${anime.status === "On Hold" ? "selected" : ""}>On Hold</option>
-          <option ${anime.status === "Dropped" ? "selected" : ""}>Dropped</option>
-          </select>
-          </div>
-          <div class="card-actions" style="margin-top:12px;">
-            <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
-            <button class="btn-delete" onclick="fetchAnime()">x</button>
-          </div>
-          `;
-        }
+    </div>
+    <div class="form-group">
+      <label>Genre</label>
+      <input type="text" id="edit-genre-${id}" value="${anime.genre || ""}">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="edit-status-${id}">
+        <option ${anime.status === "Plan to Watch" ? "selected" : ""}>Plan to Watch</option>
+        <option ${anime.status === "Watching" ? "selected" : ""}>Watching</option>
+        <option ${anime.status === "Completed" ? "selected" : ""}>Completed</option>
+        <option ${anime.status === "On Hold" ? "selected" : ""}>On Hold</option>
+        <option ${anime.status === "Dropped" ? "selected" : ""}>Dropped</option>
+      </select>
+    </div>
+    <div class="card-actions" style="margin-top:12px;">
+      <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
+      <button class="btn-delete" onclick="fetchAnime()">✕</button>
+    </div>
+  `;
+}
 
-        function saveAnime(id) {
-          const title = document.getElementById(`edit-title-${id}`).value.trim();
-          const genre = document.getElementById(`edit-genre-${id}`).value.trim();
-          const status = document.getElementById(`edit-status-${id}`).value;
+function saveAnime(id) {
+  const title = document.getElementById(`edit-title-${id}`).value.trim();
+  const genre = document.getElementById(`edit-genre-${id}`).value.trim();
+  const status = document.getElementById(`edit-status-${id}`).value;
 
-          fetch(`/anime/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, genre, status, rating: 0 })
-          })
-          .then(res => res.json())
-          .then(() => fetchAnime());
-        }
+  fetch(`/anime/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, genre, status, rating: 0 })
+  })
+  .then(res => res.json())
+  .then(() => fetchAnime());
+}
+
+// ── INIT ──
+fetchAnime();
