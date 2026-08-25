@@ -216,11 +216,20 @@ function renderAnime() {
             ? anime.synopsis.substring(0, 120) + "..."
             : anime.synopsis}
           </div>` : ""}
-        <div class="card-actions">
-          <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
-          <button class="btn-delete" onclick="deleteAnime(${anime.id})">✕</button>
+      <div class="form-group">
+        <label>Rating</label>
+        <div class="star-row" id="edit-stars-${id}">
+          <span class="star ${anime.rating >= 1 ? 'filled' : ''}" onclick="setEditRating(${id}, 1)">★</span>
+          <span class="star ${anime.rating >= 2 ? 'filled' : ''}" onclick="setEditRating(${id}, 2)">★</span>
+          <span class="star ${anime.rating >= 3 ? 'filled' : ''}" onclick="setEditRating(${id}, 3)">★</span>
+          <span class="star ${anime.rating >= 4 ? 'filled' : ''}" onclick="setEditRating(${id}, 4)">★</span>
+          <span class="star ${anime.rating >= 5 ? 'filled' : ''}" onclick="setEditRating(${id}, 5)">★</span>
         </div>
       </div>
+      <div class="card-actions" style="margin-top:12px;">
+        <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
+        <button class="btn-delete" onclick="fetchAnime()">✕</button>
+      </div>    
     </div>
   `).join("");
 }
@@ -309,6 +318,17 @@ function editAnime(id) {
   const anime = animeList.find(a => a.id === id);
   if (!anime) return;
 
+function setEditRating(id, value) {
+  // store the rating on the card element
+  document.querySelector(`[data-id="${id}"]`).dataset.editRating = value;
+  
+  // update the stars visually
+  const starRow = document.getElementById(`edit-stars-${id}`);
+  starRow.querySelectorAll(".star").forEach((star, index) => {
+    star.classList.toggle("filled", index < value);
+  });
+}
+
   const card = document.querySelector(`[data-id="${id}"]`);
   card.innerHTML = `
     <div class="form-group">
@@ -340,11 +360,12 @@ function saveAnime(id) {
   const title = document.getElementById(`edit-title-${id}`).value.trim();
   const genre = document.getElementById(`edit-genre-${id}`).value.trim();
   const status = document.getElementById(`edit-status-${id}`).value;
+  const rating = parseInt(document.querySelector(`[data-id="${id}"]`).dataset.editRating) || 0;
 
   fetch(`/anime/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, genre, status, rating: 0 })
+    body: JSON.stringify({ title, genre, status, rating })
   })
   .then(res => res.json())
   .then(() => fetchAnime());
