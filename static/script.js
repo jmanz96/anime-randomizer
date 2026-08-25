@@ -102,7 +102,6 @@ titleInput.addEventListener("input", () => {
     return;
   }
 
-  // wait for user to stop typing before searching
   clearTimeout(titleInput._searchTimeout);
   titleInput._searchTimeout = setTimeout(() => {
     console.log("Searching for:", query);
@@ -110,7 +109,8 @@ titleInput.addEventListener("input", () => {
       .then(res => res.json())
       .then(data => {
         console.log("Jikan response:", data);
-          if (!data.data || data.data.length === 0) {
+        if (!data.data || data.data.length === 0) {
+          jikanSuggestions.style.display = "none";
           return;
         }
 
@@ -123,7 +123,6 @@ titleInput.addEventListener("input", () => {
           </div>
         `).join("");
 
-        // store results so we can look them up when user picks one
         titleInput._jikanResults = data.data;
         jikanSuggestions.style.display = "block";
       });
@@ -134,7 +133,6 @@ function selectJikanAnime(malId) {
   const anime = titleInput._jikanResults.find(a => a.mal_id === malId);
   if (!anime) return;
 
-  // store full anime data
   selectedAnime = {
     title: anime.title_english || anime.title,
     genre: anime.genres.map(g => g.name).join(", "),
@@ -147,7 +145,6 @@ function selectJikanAnime(malId) {
     mal_id: anime.mal_id
   };
 
-  // autofill form
   titleInput.value = selectedAnime.title;
   document.getElementById("genre-input").value = selectedAnime.genre;
   jikanSuggestions.style.display = "none";
@@ -172,7 +169,7 @@ function fetchAnime() {
 
 function updateCount() {
   document.getElementById("anime-count").textContent = animeList.length;
-  document.getElementById("vault-count").textCojntent =
+  document.getElementById("vault-count").textContent =
     `Your Vault — ${animeList.length} title${animeList.length !== 1 ? "s" : ""}`;
 }
 
@@ -216,20 +213,11 @@ function renderAnime() {
             ? anime.synopsis.substring(0, 120) + "..."
             : anime.synopsis}
           </div>` : ""}
-      <div class="form-group">
-        <label>Rating</label>
-        <div class="star-row" id="edit-stars-${id}">
-          <span class="star ${anime.rating >= 1 ? 'filled' : ''}" onclick="setEditRating(${id}, 1)">★</span>
-          <span class="star ${anime.rating >= 2 ? 'filled' : ''}" onclick="setEditRating(${id}, 2)">★</span>
-          <span class="star ${anime.rating >= 3 ? 'filled' : ''}" onclick="setEditRating(${id}, 3)">★</span>
-          <span class="star ${anime.rating >= 4 ? 'filled' : ''}" onclick="setEditRating(${id}, 4)">★</span>
-          <span class="star ${anime.rating >= 5 ? 'filled' : ''}" onclick="setEditRating(${id}, 5)">★</span>
+        <div class="card-actions">
+          <button class="btn-edit" onclick="editAnime(${anime.id})">Edit</button>
+          <button class="btn-delete" onclick="deleteAnime(${anime.id})">✕</button>
         </div>
       </div>
-      <div class="card-actions" style="margin-top:12px;">
-        <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
-        <button class="btn-delete" onclick="fetchAnime()">✕</button>
-      </div>    
     </div>
   `).join("");
 }
@@ -274,7 +262,6 @@ document.getElementById("add-button").addEventListener("click", () => {
 
   if (!title) { alert("Please enter a title!"); return; }
 
-  // merge Jikan data with user input
   const payload = {
     title,
     genre,
@@ -318,17 +305,6 @@ function editAnime(id) {
   const anime = animeList.find(a => a.id === id);
   if (!anime) return;
 
-function setEditRating(id, value) {
-  // store the rating on the card element
-  document.querySelector(`[data-id="${id}"]`).dataset.editRating = value;
-  
-  // update the stars visually
-  const starRow = document.getElementById(`edit-stars-${id}`);
-  starRow.querySelectorAll(".star").forEach((star, index) => {
-    star.classList.toggle("filled", index < value);
-  });
-}
-
   const card = document.querySelector(`[data-id="${id}"]`);
   card.innerHTML = `
     <div class="form-group">
@@ -349,6 +325,16 @@ function setEditRating(id, value) {
         <option ${anime.status === "Dropped" ? "selected" : ""}>Dropped</option>
       </select>
     </div>
+    <div class="form-group">
+      <label>Rating</label>
+      <div class="star-row" id="edit-stars-${id}">
+        <span class="star ${anime.rating >= 1 ? 'filled' : ''}" onclick="setEditRating(${id}, 1)">★</span>
+        <span class="star ${anime.rating >= 2 ? 'filled' : ''}" onclick="setEditRating(${id}, 2)">★</span>
+        <span class="star ${anime.rating >= 3 ? 'filled' : ''}" onclick="setEditRating(${id}, 3)">★</span>
+        <span class="star ${anime.rating >= 4 ? 'filled' : ''}" onclick="setEditRating(${id}, 4)">★</span>
+        <span class="star ${anime.rating >= 5 ? 'filled' : ''}" onclick="setEditRating(${id}, 5)">★</span>
+      </div>
+    </div>
     <div class="card-actions" style="margin-top:12px;">
       <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
       <button class="btn-delete" onclick="fetchAnime()">✕</button>
@@ -356,6 +342,19 @@ function setEditRating(id, value) {
   `;
 }
 
+// ── SET EDIT RATING ──
+function setEditRating(id, value) {
+  // store the rating on the card element
+  document.querySelector(`[data-id="${id}"]`).dataset.editRating = value;
+
+  // update the stars visually
+  const starRow = document.getElementById(`edit-stars-${id}`);
+  starRow.querySelectorAll(".star").forEach((star, index) => {
+    star.classList.toggle("filled", index < value);
+  });
+}
+
+// ── SAVE ANIME ──
 function saveAnime(id) {
   const title = document.getElementById(`edit-title-${id}`).value.trim();
   const genre = document.getElementById(`edit-genre-${id}`).value.trim();
