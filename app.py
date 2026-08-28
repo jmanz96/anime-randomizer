@@ -127,6 +127,74 @@ def search_anime():
         print(f"Jikan error: {e}")
         return jsonify({"error": str(e)}), 500
 
+# ── BOOKS ROUTES ──
+
+@app.route("/books")
+def get_books():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books ORDER BY id")
+    books = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify([dict(row) for row in books])
+
+@app.route("/books", methods=["POST"])
+def add_book():
+    data = request.get_json(force=True)
+    title = data["title"]
+    author = data.get("author", "")
+    genre = data.get("genre", "")
+    status = data["status"]
+    rating = data.get("rating", 0)
+    image_url = data.get("image_url", "")
+    page_count = data.get("page_count", None)
+    synopsis = data.get("synopsis", "")
+    year = data.get("year", None)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO books 
+        (title, author, genre, status, rating, image_url, page_count, synopsis, year) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+        (title, author, genre, status, rating, image_url, page_count, synopsis, year)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"message": "Book added!"})
+
+@app.route("/books/<int:id>", methods=["DELETE"])
+def delete_book(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM books WHERE id = %s", (id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"message": "Book deleted!"})
+
+@app.route("/books/<int:id>", methods=["PUT"])
+def update_book(id):
+    data = request.get_json(force=True)
+    title = data["title"]
+    author = data.get("author", "")
+    genre = data.get("genre", "")
+    status = data["status"]
+    rating = data.get("rating", 0)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE books SET title=%s, author=%s, genre=%s, status=%s, rating=%s WHERE id=%s",
+        (title, author, genre, status, rating, id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({"message": "Book updated!"})
+
 # only runs if this file is running directly
 if __name__ == "__main__":
     init_db()

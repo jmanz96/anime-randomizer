@@ -469,3 +469,26 @@ nav { display: flex; gap: 24px; }
   margin-bottom: 14px;
   font-style: italic;
 }
+
+/* ── VAULT SWITCHER ── */
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ── VAULT SWITCHER ── */
+#vault-switcher {
+  background: transparent;
+  border: none;
+  color: var(--accent-main);
+  font-family: 'Space Mono', monospace;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+}
+

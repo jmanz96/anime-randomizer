@@ -1,6 +1,6 @@
 /*
   FRONTEND FLOW:
-  1. fetchAnime() asks Flask for data via GET request
+  1. fetchVault() asks Flask for data via GET request
   2. renderAnime() builds cards from that data using template literals
   3. Event listeners watch for user actions (click, input)
   4. User actions trigger POST/PUT/DELETE requests to Flask
@@ -25,6 +25,19 @@ const themeToggle = document.getElementById("theme-toggle");
 themeToggle.addEventListener("click", () => {
   document.body.classList.toggle("dawn");
   themeToggle.textContent = document.body.classList.contains("dawn") ? "☾ Dark" : "☀ Dawn";
+});
+
+// ── VAULT SWITCHER ──
+let currentVault = "anime";
+const vaultWord = document.getElementById("vault-word");
+
+vaultWord.style.cursor = "pointer";
+vaultWord.title = "Click to switch vault";
+
+vaultWord.addEventListener("click", () => {
+  currentVault = currentVault === "anime" ? "books" : "anime";
+  vaultWord.textContent = currentVault === "anime" ? "watch" : "read";
+  fetchVault();
 });
 
 // ── STAR RATING ──
@@ -155,8 +168,8 @@ document.addEventListener("click", (e) => {
 });
 
 // ── FETCH & RENDER ──
-function fetchAnime() {
-  fetch("/anime")
+  function fetchVault() {
+  fetch(`/${currentVault}`)
     .then(res => res.json())
     .then(data => {
       animeList = data;
@@ -289,7 +302,7 @@ document.getElementById("add-button").addEventListener("click", () => {
     currentRating = 0;
     selectedAnime = null;
     updateStars();
-    fetchAnime();
+    fetchVault();
   });
 });
 
@@ -297,7 +310,7 @@ document.getElementById("add-button").addEventListener("click", () => {
 function deleteAnime(id) {
   fetch(`/anime/${id}`, { method: "DELETE" })
     .then(res => res.json())
-    .then(() => fetchAnime());
+    .then(() => fetchVault());
 }
 
 // ── EDIT ──
@@ -337,7 +350,7 @@ function editAnime(id) {
     </div>
     <div class="card-actions" style="margin-top:12px;">
       <button class="btn-edit" onclick="saveAnime(${id})">Save</button>
-      <button class="btn-delete" onclick="fetchAnime()">✕</button>
+      <button class="btn-delete" onclick="fetchVault()">✕</button>
     </div>
   `;
 }
@@ -367,8 +380,8 @@ function saveAnime(id) {
     body: JSON.stringify({ title, genre, status, rating })
   })
   .then(res => res.json())
-  .then(() => fetchAnime());
+  .then(() => fetchVault());
 }
 
 // ── INIT ──
-fetchAnime();
+fetchVault();
