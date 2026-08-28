@@ -37,8 +37,20 @@ vaultWord.title = "Click to switch vault";
 vaultWord.addEventListener("click", () => {
   currentVault = currentVault === "anime" ? "books" : "anime";
   vaultWord.textContent = currentVault === "anime" ? "watch" : "read";
+  updateVaultUI();
   fetchVault();
 });
+
+function updateVaultUI() {
+  const isBooks = currentVault === "books";
+
+  // update sidebar labels
+  document.querySelector(".sidebar-title").textContent = isBooks ? "Add to Library" : "Add to Vault";
+  document.getElementById("title-input").placeholder = isBooks ? "Search for a book..." : "Search for an anime...";
+  document.getElementById("add-button").textContent = isBooks ? "+ Add Book" : "+ Add Anime";
+  document.getElementById("vault-count").textContent = isBooks ? "Your Library" : "Your Vault";
+  document.querySelector(".hero-text p").textContent = isBooks ? "Your personal book library — randomized." : "Your personal anime vault — randomized.";
+}
 
 // ── STAR RATING ──
 const stars = document.querySelectorAll(".star");
@@ -275,7 +287,16 @@ document.getElementById("add-button").addEventListener("click", () => {
 
   if (!title) { alert("Please enter a title!"); return; }
 
-  const payload = {
+const payload = currentVault === "books" ? {
+    title,
+    genre,
+    status,
+    rating,
+    author: "",
+    synopsis: "",
+    page_count: null,
+    year: null
+  } : {
     title,
     genre,
     status,
@@ -289,7 +310,7 @@ document.getElementById("add-button").addEventListener("click", () => {
     mal_id: selectedAnime?.mal_id || null
   };
 
-  fetch("/anime", {
+  fetch(`/${currentVault}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
